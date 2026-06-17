@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DynamicBusan · 네이버 지도 플랫폼</title>
+  <link rel="preconnect" href="https://oapi.map.naver.com" />
+  <style>
+    :root{
+      /* 부산의 바다를 상징하는 울트라마린 및 네이비 베이스 */
+      --bg: #000c1a; 
+      --panel: rgba(1, 22, 39, 0.95);
+      --panel2: #022340;
+      --line: #004080;
+      --text: #f5f7fb;
+      --muted: #8ab4f8;
+      
+      /* 태그 컬러 유지 */
+      --red:#d43d37;--amber:#f59e0b;--green:#22c55e;--blue:#3b82f6;--violet:#8b5cf6;--pink:#ec4899;--cyan:#06b6d4;--lime:#84cc16;
+      --shadow: 0 18px 40px rgba(0, 12, 26, 0.8);
+      
+      /* 토글 너비 변수 */
+      --left-width: 340px;
+      --right-width: 380px;
+    }
+    *{box-sizing:border-box} 
+    html,body{height:100%;margin:0;font-family:Pretendard,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;}
+    
+    /* 전체 레이아웃: 광안대교 배너(40px) + 헤더(64px) + 메인영역 */
+    .app{display:grid;grid-template-rows:40px 64px 1fr;height:100%}
+    
+    /* 최상단 광안대교 바 */
+    .gwangan-banner {
+      background: linear-gradient(90deg, #001220, #003366, #00509e, #003366, #001220);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: #a3d5ff; letter-spacing: 5px;
+      border-bottom: 1px solid #00a8e8;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 15px rgba(0, 168, 232, 0.4);
+    }
+    .gwangan-banner::after {
+      content: "🌉 GWANGANDAEGYO BRIDGE · BUSAN METROPOLITAN CITY";
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 0 10px rgba(163, 213, 255, 0.8);
+    }
+    .gwangan-banner::before {
+      content: ""; position: absolute; inset: 0;
+      background: repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.04) 15px, rgba(255,255,255,0.04) 18px);
+      z-index: 1; pointer-events: none;
+    }
+
+    /* 헤더 */
+    header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg, #001529, #003a73 42%, #001529);z-index:20}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.04em;font-size:20px;white-space:nowrap}
+    .logoMark{width:38px;height:38px;border-radius:13px;background:linear-gradient(135deg,#00509e,#00a8e8);display:grid;place-items:center;box-shadow:0 8px 22px rgba(0, 168, 232,.36)}
+    
+    .search{flex:1;display:flex;gap:8px;min-width:210px}
+    .search input{width:100%;border:1px solid var(--line);background:#000a14;color:var(--text);padding:11px 14px;border-radius:12px;outline:none;box-shadow:inset 0 2px 6px rgba(0,0,0,0.5)}
+    .btn{border:1px solid var(--line);background:#004080;color:var(--text);border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:700;transition:0.2s;}
+    .btn:hover{background:#0059b3;box-shadow:0 0 10px rgba(0, 168, 232, 0.3)}
+    .btn.red{background:#b91c1c;border-color:#d43d37}
+    .btn.ghost{background:transparent}
+    .quota{font-size:12px;color:var(--muted);white-space:nowrap}
+
+    /* 동적 패널 레이아웃 */
+    .layout{display:grid;grid-template-columns:var(--left-width) 1fr var(--right-width);min-height:0;height:100%;transition:grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);}
+    
+    .panel{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;overflow-x:hidden;backdrop-filter:blur(10px);}
+    .panel::-webkit-scrollbar { width: 6px; }
+    .panel::-webkit-scrollbar-thumb { background: #004080; border-radius: 4px; }
+    .right{border-right:0;border-left:1px solid var(--line)}
+    
+    .section{padding:18px;border-bottom:1px solid var(--line);width:340px;}
+    .right .section{width:380px;}
+    .section h3{margin:0 0 14px;font-size:15px;color:#a3d5ff;display:flex;align-items:center;gap:6px;}
+    .section h3::before {content:"";display:inline-block;width:4px;height:14px;background:#00a8e8;border-radius:2px;}
+    .tiny{font-size:12px;color:var(--muted);line-height:1.5}
+
+    .mapWrap{position:relative;min-width:0;min-height:0;background:#000a14}
+    .map{position:absolute;inset:0;}
+    .mapBlocker{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;background:rgba(0,12,26,.92);z-index:5}
+    .mapBlocker.show{display:grid}
+    .notice{max-width:560px;background:#022340;border:1px solid #00509e;border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+    
+    /* 토글 버튼 */
+    .toggle-btn {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+      background: #002b5e; border: 1px solid #00a8e8; color: #a3d5ff;
+      width: 28px; height: 60px; display: grid; place-items: center; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 10px; transition: 0.2s;
+    }
+    .toggle-btn:hover { background: #004080; color: #fff; }
+    .toggle-left { left: 0; border-radius: 0 8px 8px 0; border-left: 0; }
+    .toggle-right { right: 0; border-radius: 8px 0 0 8px; border-right: 0; }
+
+    /* 컴포넌트들 */
+    .filters{display:grid;gap:8px}.chip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--line);background:#001529;border-radius:14px;cursor:pointer;transition:0.2s}.chip:hover{border-color:#00a8e8}.chip input{accent-color:#00a8e8}
+    .tagDot{width:13px;height:13px;border-radius:50%;display:inline-block;box-shadow:0 0 0 3px rgba(255,255,255,.06)}.tagLeft{display:flex;align-items:center;gap:9px}
+    .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat grid{background:#001529;border:1px solid var(--line);border-radius:16px;padding:13px}.stat b{font-size:20px;color:#00a8e8}.stat span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+    .stat{background:#001529;border:1px solid var(--line);border-radius:16px;padding:13px}
+    
+    .list{display:grid;gap:10px}.card{background:#001529;border:1px solid var(--line);border-radius:18px;padding:13px;cursor:pointer;transition:.18s}.card:hover{transform:translateY(-2px);border-color:#00a8e8;box-shadow:0 4px 12px rgba(0,168,232,0.15)}
+    .card h4{margin:0 0 7px;font-size:15px}.card p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+    .badge{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;background:rgba(255,255,255,.06);margin:3px 4px 3px 0}
+    
+    .detailTitle{font-size:26px;line-height:1.08;margin:0 0 8px;color:#fff}
+    .detailMeta{color:var(--muted);font-size:13px;line-height:1.55}.price{font-size:24px;font-weight:900;color:#00a8e8;margin:8px 0}
+    .divider{height:1px;background:var(--line);margin:14px 0}
+    .controlRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .formGrid{display:grid;gap:8px}
+    .formGrid input,.formGrid select,.formGrid textarea{width:100%;border:1px solid var(--line);background:#000a14;color:var(--text);padding:10px;border-radius:12px;outline:none}
+    .formGrid input:focus,.formGrid select:focus,.formGrid textarea:focus{border-color:#00a8e8}
+    
+    .legend{position:absolute;left:18px;bottom:18px;background:rgba(1,22,39,.95);border:1px solid var(--line);border-radius:18px;padding:12px;z-index:4;box-shadow:var(--shadow);font-size:12px;backdrop-filter:blur(5px)}
+    .legend div{display:flex;align-items:center;gap:7px;margin:6px 0}
+    .topTools{position:absolute;top:16px;left:16px;right:16px;display:flex;gap:8px;z-index:4;pointer-events:none;justify-content:center}
+    .topTools>*{pointer-events:auto}
+    .pill{background:rgba(1,22,39,.94);border:1px solid var(--line);border-radius:999px;padding:9px 12px;font-size:12px;color:#a3d5ff;font-weight:700}
+    
+    .marker{position:relative;transform:translate(-50%,-100%);width:34px;height:44px;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5))}
+    .marker .pin{width:34px;height:34px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);border:3px solid white}
+    .marker .txt{position:absolute;inset:4px 4px 10px 4px;display:grid;place-items:center;font-size:14px;font-weight:900;color:white}
+    .marker .txt span{transform:translateY(-2px)}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="gwangan-banner"></div>
+  <header>
+    <div class="logo"><div class="logoMark">⚓</div><div>DynamicBusan 착한맛지도</div></div>
+    <div class="search"><input id="q" placeholder="식당명·주소·태그 검색: 예) 동래, 8000, 우슐랭"/><button class="btn" id="searchBtn">검색</button></div>
+    <button class="btn ghost" id="allNaverBtn">네이버지도 전체보기</button>
+    <button class="btn red" id="resetQuotaBtn">오늘 차단 해제</button>
+    <div class="quota" id="quotaText">API 사용량 확인 중</div>
+  </header>
+  <div class="layout" id="mainLayout">
+    <aside class="panel">
+      <div class="section" style="display: none;">
+        <h3>지도 API 설정 (관리자 전용)</h3>
+        <div class="formGrid">
+          <input id="clientId" placeholder="NAVER Maps Web Dynamic Map Client ID" />
+          <input id="geocodeEndpoint" placeholder="Geocoding 프록시 URL" />
+          <input id="dailyLimit" type="number" value="900" min="10" max="60000" />
+          <button class="btn" id="saveConfig">설정 저장 후 네이버지도 로드</button>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h3>레이어 필터</h3>
+        <div class="filters" id="filters"></div>
+      </div>
+      
+      <div class="section">
+        <h3>해양물류 허브 현황</h3>
+        <div class="statGrid">
+          <div class="stat"><b id="countAll">0</b><span>현재 표시 식당</span></div>
+          <div class="stat"><b id="countYear">2026</b><span>DB 구축 연도</span></div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h3>식당 추가 / 제보 (관리자 승인 필요)</h3>
+        <div class="formGrid">
+          <input id="name" placeholder="식당명" />
+          <input id="addr" placeholder="주소" />
+          <input id="menu" placeholder="대표 메뉴·가격" />
+          <select id="tag"></select>
+          <input id="year" placeholder="선정년도 예: 2026" value="2026" />
+          <div class="controlRow">
+            <input id="lat" placeholder="위도 (선택)"/>
+            <input id="lng" placeholder="경도 (선택)"/>
+          </div>
+          <textarea id="note" placeholder="추천 이유·출처·운영시간"></textarea>
+          <button class="btn" id="addBtn" style="background:#00a8e8;color:#000;">관리자 승인 요청 (제출)</button>
+        </div>
+        <p class="tiny" style="margin-top:10px;">* 제출된 데이터는 백엔드 서버를 거쳐 <a href="admin.html" style="color:#a3d5ff">관리자 대시보드</a> 검토 후 반영됩니다.</p>
+      </div>
+    </aside>
+    
+    <main class="mapWrap">
+      <div id="map" class="map"></div>
+      
+      <div class="toggle-btn toggle-left" id="btnToggleLeft" title="좌측 메뉴 접기/펴기">◀</div>
+      <div class="toggle-btn toggle-right" id="btnToggleRight" title="우측 메뉴 접기/펴기">▶</div>
+      
+      <div class="mapBlocker" id="blocker"><div class="notice"><h2>API 사용량 보호 차단</h2><p>오늘 설정한 네이버 지도 로드 한도를 초과했습니다.</p><button class="btn red" id="blockerReset">관리자 차단 해제</button></div></div>
+      <div class="topTools">
+        <div class="pill" id="modePill">해양 허브 로딩 중...</div>
+        <button class="btn" id="locBtn">현재 위치</button>
+        <button class="btn" id="fitBtn">전체 맞춤</button>
+      </div>
+      <div class="legend" id="legend"></div>
+    </main>
+    
+    <aside class="panel right">
+      <div class="section">
+        <h3>선택 식당 상세정보</h3>
+        <div id="detail"><p class="tiny">지도 핀이나 목록을 선택하면 상세 정보 및 네이버지도 이동 버튼이 표시됩니다.</p></div>
+      </div>
+      <div class="section">
+        <h3>등록 식당 목록</h3>
+        <div class="list" id="list"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const TAGS = {
+  woosuleng:{label:'우슐랭 · 우체국 추천', color:'#d43d37', icon:'우'},
+  kind:{label:'착한식당', color:'#22c55e', icon:'착'},
+  fairprice:{label:'지자체 인증 착한가격업소', color:'#3b82f6', icon:'가'},
+  hygiene:{label:'위생/모범음식점', color:'#8b5cf6', icon:'모'},
+  sharing:{label:'나눔/무료급식/선행 식당', color:'#ec4899', icon:'나'},
+  insider:{label:'정보꾼 추천 착한식당', color:'#f59e0b', icon:'정'},
+  local:{label:'토박이 히든식당', color:'#06b6d4', icon:'토'}
+};
+
+const seed = [
+ {id:'p2025-001',name:'다주',address:'부산광역시 중구 대청로135번길 13-1 3층',menu:'바질페스토 파스타 ₩15,000 / 감바스&오일파스타 ₩17,000',tag:'woosuleng',year:'2025',lat:35.10383,lng:129.03130,note:'부산우체국 추천 1 · 이탈리안 레스토랑'},
+ {id:'p2025-002',name:'다무치아',address:'부산광역시 중구 대청로137번길 9',menu:'샤브전골 1인 ₩10,000 / 얼큰미나리전골 ₩12,000',tag:'woosuleng',year:'2025',lat:35.10405,lng:129.03108,note:'부산우체국 추천 2 · 1인 샤브 가능 가성비 맛집'},
+ {id:'p2025-003',name:'된장한상',address:'부산광역시 중구 대청로141번길 17',menu:'한우육회비빔밥 된장한상 ₩12,000',tag:'woosuleng',year:'2025',lat:35.10434,lng:129.03100,note:'부산우체국 추천 3 · 재래식 된장찌개 전문점'},
+ {id:'p2025-004',name:'오붓한',address:'부산광역시 중구 동광길42 102호',menu:'런치 계절채소밥 ₩13,000',tag:'woosuleng',year:'2025',lat:35.10192,lng:129.03522,note:'부산우체국 추천 4 · 비건 한식'},
+ {id:'p2025-005',name:'황태를벗삼아',address:'부산광역시 중구 대청로137번길 10-1',menu:'황태통찜 2인 ₩16,000',tag:'woosuleng',year:'2025',lat:35.10417,lng:129.03118,note:'부산우체국 추천 5 · 황태 요리'},
+ {id:'p2025-008',name:'동래할매파전',address:'부산광역시 동래구 명륜로94번길 43-10',menu:'동래파전 소 ₩28,000',tag:'woosuleng',year:'2025',lat:35.20538,lng:129.08203,note:'동래우체국 추천 1 · 4대째 동래파전'},
+ {id:'p2025-010',name:'동래밀면',address:'부산광역시 동래구 명륜로 47',menu:'밀면 ₩9,000',tag:'woosuleng',year:'2025',lat:35.20304,lng:129.08245,note:'동래우체국 추천 3 · 부산 밀면'},
+ {id:'tag-001',name:'착한분식 예시',address:'부산광역시 연제구 중앙대로 1001',menu:'김밥 ₩3,000',tag:'fairprice',year:'2025',lat:35.17982,lng:129.07508,note:'지자체 인증 착한가격업소 입력 예시'}
+];
+
+let data = JSON.parse(localStorage.getItem('woosulengData')||'null') || seed;
+let activeTags = new Set(Object.keys(TAGS)); let markers=[]; let map=null; let naverLoaded=false;
+const $=id=>document.getElementById(id);
+
+let leftOpen = true; let rightOpen = true;
+
+$('btnToggleLeft').onclick = () => {
+  leftOpen = !leftOpen;
+  document.documentElement.style.setProperty('--left-width', leftOpen ? '340px' : '0px');
+  $('btnToggleLeft').textContent = leftOpen ? '◀' : '▶';
+  triggerMapResize();
+};
+
+$('btnToggleRight').onclick = () => {
+  rightOpen = !rightOpen;
+  document.documentElement.style.setProperty('--right-width', rightOpen ? '380px' : '0px');
+  $('btnToggleRight').textContent = rightOpen ? '▶' : '◀';
+  triggerMapResize();
+};
+
+function triggerMapResize() {
+  let count = 0;
+  const interval = setInterval(() => {
+    if (naverLoaded && map) { window.dispatchEvent(new Event('resize')); }
+    if (++count > 15) clearInterval(interval);
+  }, 30);
+}
+
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function getConfig(){return JSON.parse(localStorage.getItem('naverConfig')||'{}')}
+function setConfig(c){localStorage.setItem('naverConfig',JSON.stringify(c))}
+function quota(){const k='naverQuota_'+todayKey();return JSON.parse(localStorage.getItem(k)||'{"loads":0,"geocodes":0,"blocked":false}')}
+function saveQuota(q){localStorage.setItem('naverQuota_'+todayKey(),JSON.stringify(q)); renderQuota()}
+function limit(){return +(getConfig().dailyLimit||900)}
+function canUseApi(){const q=quota(); return !q.blocked && q.loads < limit();}
+function incLoad(){const q=quota(); q.loads++; if(q.loads>=limit()) q.blocked=true; saveQuota(q); return !q.blocked}
+function renderQuota(){const q=quota(); $('quotaText').textContent=`오늘 API 로드 ${q.loads}/${limit()} · ${q.blocked?'차단됨':'허용'}`; $('blocker').classList.toggle('show',q.blocked)}
+function markerHtml(item){const t=TAGS[item.tag]||TAGS.woosuleng;return `<div class="marker"><div class="pin" style="background:${t.color}"></div><div class="txt"><span>${t.icon}</span></div></div>`}
+
+// [수정한 안전 로드 로직] 백엔드 Function에서 Client ID 받아오기
+async function loadNaverSecured() {
+  const c = getConfig(); 
+  $('clientId').value = c.clientId || ''; 
+  $('geocodeEndpoint').value = c.geocodeEndpoint || ''; 
+  $('dailyLimit').value = c.dailyLimit || 900; 
+  renderQuota(); 
+
+  if(!canUseApi()){ initDemo('API 사용 제한 초과'); return; } 
+
+  try {
+    // Netlify 서버리스 함수 호출
+    const response = await fetch('/.netlify/functions/get-client-id');
+    if (!response.ok) throw new Error();
+    const serverData = await response.json();
+    
+    incLoad(); 
+    const s = document.createElement('script'); 
+    s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(serverData.clientId)}`; 
+    s.onload = () => { naverLoaded = true; initNaver(); }; 
+    s.onerror = () => { initDemo('네이버 지도 로드 오류'); }; 
+    document.head.appendChild(s);
+  } catch (err) {
+    initDemo('서버리스 함수 보안 검증 대기 (데모 모드)');
+  }
+}
+
+function initNaver(){
+  map = new naver.maps.Map('map',{center:new naver.maps.LatLng(35.1796,129.0756),zoom:11,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT},mapDataControl:false}); 
+  $('modePill').textContent = 'DYNAMIC MAP ACTIVE'; render();
+}
+
+function initDemo(msg){
+  $('map').innerHTML = `<div style="height:100%;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,#002b5e,#000a14 70%);"><div style="max-width:540px;text-align:center;padding:24px;border:1px solid #00509e;background:rgba(0,21,41,0.8);border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.8);"><h2>${msg||'데모 모드'}</h2><p style="color:#8ab4f8;line-height:1.6">안전 금고(.env) 및 Netlify Functions가 배포 완료되면 실시간 지도가 작동합니다.</p></div></div>`; 
+  $('modePill').textContent = '데모 모드'; renderListOnly();
+}
+
+function clearMarkers(){markers.forEach(m=>{ if(m.setMap) m.setMap(null); else m.remove?.(); }); markers=[];}
+function filtered(){const q=$('q').value.trim().toLowerCase();return data.filter(d=>activeTags.has(d.tag)).filter(d=>!q||[d.name,d.address,d.menu,d.note,TAGS[d.tag]?.label,d.year].join(' ').toLowerCase().includes(q));}
+
+function render(){
+  renderFilters(); renderLegend(); renderListOnly(); 
+  if(!naverLoaded||!map) return; 
+  clearMarkers(); 
+  const bounds = new naver.maps.LatLngBounds(); 
+  filtered().forEach(item=>{
+    if(!item.lat || !item.lng) return;
+    const pos=new naver.maps.LatLng(+item.lat,+item.lng); 
+    bounds.extend(pos); 
+    const marker=new naver.maps.Marker({position:pos,map,icon:{content:markerHtml(item),anchor:new naver.maps.Point(17,44)}}); 
+    naver.maps.Event.addListener(marker,'click',()=>selectItem(item)); 
+    markers.push(marker);
+  }); 
+  if(markers.length) map.fitBounds(bounds);
+}
+
+function renderListOnly(){const f=filtered(); $('countAll').textContent=f.length; $('list').innerHTML=f.map(d=>`<div class="card" onclick="selectById('${d.id}')"><h4>${d.name}</h4><p>${badge(d)} ${d.address}<br>${d.menu}</p></div>`).join('')||'<p class="tiny">조건에 맞는 식당이 없습니다.</p>';}
+function badge(d){const t=TAGS[d.tag]||TAGS.woosuleng;return `<span class="badge" style="border-color:${t.color};color:${t.color}">${t.label}</span><span class="badge">${d.year} 선정</span>`}
+function selectById(id){const d=data.find(x=>x.id===id); if(d) selectItem(d)}
+function selectItem(d){
+  const t=TAGS[d.tag]||TAGS.woosuleng; 
+  $('detail').innerHTML=`<h2 class="detailTitle">${d.name}</h2><div>${badge(d)}</div><div class="price">${escapeHtml(d.menu)}</div><div class="detailMeta">${escapeHtml(d.address)}<br>${escapeHtml(d.note||'')}</div><div class="divider"></div><div class="controlRow"><button class="btn" style="background:#00a8e8;color:#000;border:none;" onclick="openNaver('${encodeURIComponent(d.name+' '+d.address)}')">네이버지도 보기</button><button class="btn" onclick="copyText('${escapeAttr(d.name+' '+d.address)}')">주소 복사</button></div><p class="tiny" style="margin-top:12px;">태그 분류: <span style="color:${t.color};font-weight:900">${t.label}</span></p>`; 
+  if(naverLoaded&&map){map.panTo(new naver.maps.LatLng(+d.lat,+d.lng)); map.setZoom(Math.max(map.getZoom(),15));}
+}
+
+function openNaver(q){window.open(`https://map.naver.com/p/search/${q}`,'_blank')}
+function openAllNaver(){const names=filtered().slice(0,25).map(d=>d.name).join(' '); openNaver(encodeURIComponent(names||'우슐랭 맛집'))}
+function copyText(t){navigator.clipboard?.writeText(t)}
+function renderFilters(){const el=$('filters'); el.innerHTML=Object.entries(TAGS).map(([k,t])=>`<label class="chip"><span class="tagLeft"><span class="tagDot" style="background:${t.color}"></span>${t.label}</span><input type="checkbox" ${activeTags.has(k)?'checked':''} onchange="toggleTag('${k}',this.checked)"></label>`).join(''); $('tag').innerHTML=Object.entries(TAGS).map(([k,t])=>`<option value="${k}">${t.label}</option>`).join('')}
+function renderLegend(){ $('legend').innerHTML=Object.values(TAGS).map(t=>`<div><span class="tagDot" style="background:${t.color}"></span>${t.label}</div>`).join('')}
+function toggleTag(k,on){on?activeTags.add(k):activeTags.delete(k); render();}
+
+// [수정한 제보 백엔드 전송 기능] 
+async function addItem(){
+  const name = $('name').value.trim();
+  const address = $('addr').value.trim();
+  
+  if(!name || !address){
+    alert('식당명과 주소는 필수 입력 사항입니다.');
+    return;
+  }
+  
+  const payload = {
+    name: name,
+    address: address,
+    menu: $('menu').value.trim(),
+    tag: $('tag').value,
+    year: $('year').value.trim(),
+    lat: $('lat').value.trim(),
+    lng: $('lng').value.trim(),
+    note: $('note').value.trim(),
+    requestDate: new Date().toISOString()
+  };
+
+  try {
+    const response = await fetch('/.netlify/functions/submit-req', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/semibold-json' },
+      body: JSON.stringify(payload)
+    });
+
+    if(response.ok) {
+      alert(`[제보 성공]\n'${name}' 제보가 백엔드 서버로 실시간 전송되었습니다.\n관리자 대시보드(admin.html) 승인 절차 후 지도에 최종 등록됩니다.`);
+      $('name').value = ''; $('addr').value = ''; $('menu').value = ''; $('lat').value = ''; $('lng').value = ''; $('note').value = '';
+    } else {
+      alert('서버에 문제가 발생하여 제출하지 못했습니다.');
+    }
+  } catch(e) {
+    alert('네트워크 연결이 고르지 못합니다.');
+  }
+}
+
+function fitAll(){if(!naverLoaded||!map)return; const b=new naver.maps.LatLngBounds(); filtered().forEach(d=>b.extend(new naver.maps.LatLng(+d.lat,+d.lng))); if(filtered().length) map.fitBounds(b);}
+function locate(){if(!navigator.geolocation)return; navigator.geolocation.getCurrentPosition(p=>{if(naverLoaded&&map){map.setCenter(new naver.maps.LatLng(p.coords.latitude,p.coords.longitude));map.setZoom(15);}})}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))} 
+function escapeAttr(s){return String(s).replace(/'/g,'’')}
+
+$('saveConfig').onclick=()=>{setConfig({clientId:$('clientId').value.trim(),geocodeEndpoint:$('geocodeEndpoint').value.trim(),dailyLimit:+$('dailyLimit').value||900}); location.reload()};
+$('resetQuotaBtn').onclick=$('blockerReset').onclick=()=>{saveQuota({loads:0,geocodes:0,blocked:false}); location.reload()};
+$('searchBtn').onclick=render; $('q').oninput=renderListOnly; $('addBtn').onclick=addItem; $('fitBtn').onclick=fitAll; $('locBtn').onclick=locate; $('allNaverBtn').onclick=openAllNaver;
+
+window.toggleTag=toggleTag; window.selectById=selectById; window.openNaver=openNaver; window.copyText=copyText;
+renderFilters(); renderLegend(); loadNaverSecured();
+</script>
+</body>
+</html>
