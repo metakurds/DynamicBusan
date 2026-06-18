@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DynamicBusan 관리자 대시보드</title>
+  <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <style>
+    body { background: #000c1a; color: #f57fb; font-family: sans-serif; padding: 40px; text-align: center; }
+    .box { max-width: 600px; margin: 0 auto; background: rgba(1, 22, 39, 0.95); border: 1px solid #004080; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    h1 { color: #a3d5ff; }
+    .btn { background: #004080; color: #fff; border: 1px solid #00a8e8; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+    .btn:hover { background: #0059b3; }
+    ul { list-style: none; padding: 0; text-align: left; }
+    li { background: #001529; border: 1px solid #004080; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>⚓ 제보 승인 대기열 (관리자 전용)</h1>
+    <hr style="border-color: #004080; margin-bottom: 20px;">
+    
+    <!-- Netlify 시스템 로그인이 자동으로 생성되는 영역 -->
+    <div data-netlify-identity-menu></div>
+    
+    <!-- [추가] 가끔 메뉴가 자동으로 로드되지 않을 때 강제로 로그인 모달을 깨우는 비상 버튼입니다 -->
+    <button class="btn" onclick="netlifyIdentity.open()">로그인 / 제어창 열기</button>
+
+    <div id="admin-panel" style="display:none; margin-top: 30px;">
+      <h3>🚨 실시간 대기 항목</h3>
+      <ul id="pending-list">
+        <li>
+          <span>[2026-06-18] 착한국밥 (동래구) - 태그: 착한식당</span>
+          <button class="btn" style="margin:0; background:#22c55e; border:none;" onclick="approve('req-id-123')">승인하여 지도에 반영</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // 로그인 완료 감지 시 패널 표출
+    netlifyIdentity.on('login', user => {
+      document.getElementById('admin-panel').style.display = 'block';
+      console.log("관리자 인증 성공:", user);
+    });
+    
+    // 로그아웃 감지 시 패널 숨김
+    netlifyIdentity.on('logout', () => {
+      document.getElementById('admin-panel').style.display = 'none';
+    });
+
+    function approve(id) {
+      alert(id + "번 식당 승인이 완료되었습니다. 백엔드 DB 레이어 세팅으로 전송합니다.");
+    }
+  </script>
+</body>
+</html>
