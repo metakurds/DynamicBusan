@@ -8,55 +8,39 @@
   <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <style>
     :root{
-      /* 부산의 바다를 상징하는 울트라마린 및 네이비 베이스 */
       --bg: #000c1a; 
       --panel: rgba(1, 22, 39, 0.95);
       --panel2: #022340;
       --line: #004080;
       --text: #f5f7fb;
       --muted: #8ab4f8;
-      
-      /* 태그 컬러 유지 */
       --red:#d43d37;--amber:#f59e0b;--green:#22c55e;--blue:#3b82f6;--violet:#8b5cf6;--pink:#ec4899;--cyan:#06b6d4;--lime:#84cc16;
       --shadow: 0 18px 40px rgba(0, 12, 26, 0.8);
-      
-      /* 토글 너비 변수 */
       --left-width: 340px;
       --right-width: 380px;
     }
     *{box-sizing:border-box} 
     html,body{height:100%;margin:0;font-family:Pretendard,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;}
-    
-    /* 전체 레이아웃: 광안대교 배너(40px) + 헤더(64px) + 메인영역 */
     .app{display:grid;grid-template-rows:40px 64px 1fr;height:100%}
-    
-    /* 최상단 광안대교 바 */
     .gwangan-banner {
       background: linear-gradient(90deg, #001220, #003366, #00509e, #003366, #001220);
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; font-weight: 800; color: #a3d5ff; letter-spacing: 5px;
-      border-bottom: 1px solid #00a8e8;
-      position: relative;
-      overflow: hidden;
+      border-bottom: 1px solid #00a8e8; position: relative; overflow: hidden;
       box-shadow: 0 2px 15px rgba(0, 168, 232, 0.4);
     }
     .gwangan-banner::after {
       content: "🌉 GWANGANDAEGYO BRIDGE · BUSAN METROPOLITAN CITY";
-      position: relative;
-      z-index: 2;
-      text-shadow: 0 0 10px rgba(163, 213, 255, 0.8);
+      position: relative; z-index: 2; text-shadow: 0 0 10px rgba(163, 213, 255, 0.8);
     }
     .gwangan-banner::before {
       content: ""; position: absolute; inset: 0;
       background: repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.04) 15px, rgba(255,255,255,0.04) 18px);
       z-index: 1; pointer-events: none;
     }
-
-    /* 헤더 */
     header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg, #001529, #003a73 42%, #001529);z-index:20}
     .logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.04em;font-size:20px;white-space:nowrap}
     .logoMark{width:38px;height:38px;border-radius:13px;background:linear-gradient(135deg,#00509e,#00a8e8);display:grid;place-items:center;box-shadow:0 8px 22px rgba(0, 168, 232,.36)}
-    
     .search{flex:1;display:flex;gap:8px;min-width:210px}
     .search input{width:100%;border:1px solid var(--line);background:#000a14;color:var(--text);padding:11px 14px;border-radius:12px;outline:none;box-shadow:inset 0 2px 6px rgba(0,0,0,0.5)}
     .btn{border:1px solid var(--line);background:#004080;color:var(--text);border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:700;transition:0.2s;}
@@ -64,28 +48,21 @@
     .btn.red{background:#b91c1c;border-color:#d43d37}
     .btn.ghost{background:transparent}
     .quota{font-size:12px;color:var(--muted);white-space:nowrap}
-
-    /* 동적 패널 레이아웃 */
     .layout{display:grid;grid-template-columns:var(--left-width) 1fr var(--right-width);min-height:0;height:100%;transition:grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);}
-    
     .panel{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;overflow-x:hidden;backdrop-filter:blur(10px);}
     .panel::-webkit-scrollbar { width: 6px; }
     .panel::-webkit-scrollbar-thumb { background: #004080; border-radius: 4px; }
     .right{border-right:0;border-left:1px solid var(--line)}
-    
     .section{padding:18px;border-bottom:1px solid var(--line);width:340px;}
     .right .section{width:380px;}
     .section h3{margin:0 0 14px;font-size:15px;color:#a3d5ff;display:flex;align-items:center;gap:6px;}
     .section h3::before {content:"";display:inline-block;width:4px;height:14px;background:#00a8e8;border-radius:2px;}
     .tiny{font-size:12px;color:var(--muted);line-height:1.5}
-
     .mapWrap{position:relative;min-width:0;min-height:0;background:#000a14}
     .map{position:absolute;inset:0;}
     .mapBlocker{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;background:rgba(0,12,26,.92);z-index:5}
     .mapBlocker.show{display:grid}
     .notice{max-width:560px;background:#022340;border:1px solid #00509e;border-radius:24px;padding:24px;box-shadow:var(--shadow)}
-    
-    /* 토글 버튼 */
     .toggle-btn {
       position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
       background: #002b5e; border: 1px solid #00a8e8; color: #a3d5ff;
@@ -95,18 +72,12 @@
     .toggle-btn:hover { background: #004080; color: #fff; }
     .toggle-left { left: 0; border-radius: 0 8px 8px 0; border-left: 0; }
     .toggle-right { right: 0; border-radius: 8px 0 0 8px; border-right: 0; }
-
-    /* 컴포넌트들 */
     .filters{display:grid;gap:8px}.chip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--line);background:#001529;border-radius:14px;cursor:pointer;transition:0.2s}.chip:hover{border-color:#00a8e8}.chip input{accent-color:#00a8e8}
     .tagDot{width:13px;height:13px;border-radius:50%;display:inline-block;box-shadow:0 0 0 3px rgba(255,255,255,.06)}.tagLeft{display:flex;align-items:center;gap:9px}
-    .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .stat{background:#001529;border:1px solid var(--line);border-radius:16px;padding:13px}
-    .stat b{font-size:20px;color:#00a8e8}.stat span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
-    
+    .statGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#001529;border:1px solid var(--line);border-radius:16px;padding:13px}.stat b{font-size:20px;color:#00a8e8}.stat span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
     .list{display:grid;gap:10px}.card{background:#001529;border:1px solid var(--line);border-radius:18px;padding:13px;cursor:pointer;transition:.18s}.card:hover{transform:translateY(-2px);border-color:#00a8e8;box-shadow:0 4px 12px rgba(0,168,232,0.15)}
     .card h4{margin:0 0 7px;font-size:15px}.card p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
     .badge{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;background:rgba(255,255,255,.06);margin:3px 4px 3px 0}
-    
     .detailTitle{font-size:26px;line-height:1.08;margin:0 0 8px;color:#fff}
     .detailMeta{color:var(--muted);font-size:13px;line-height:1.55}.price{font-size:24px;font-weight:900;color:#00a8e8;margin:8px 0}
     .divider{height:1px;background:var(--line);margin:14px 0}
@@ -114,13 +85,11 @@
     .formGrid{display:grid;gap:8px}
     .formGrid input,.formGrid select,.formGrid textarea{width:100%;border:1px solid var(--line);background:#000a14;color:var(--text);padding:10px;border-radius:12px;outline:none}
     .formGrid input:focus,.formGrid select:focus,.formGrid textarea:focus{border-color:#00a8e8}
-    
     .legend{position:absolute;left:18px;bottom:18px;background:rgba(1,22,39,.95);border:1px solid var(--line);border-radius:18px;padding:12px;z-index:4;box-shadow:var(--shadow);font-size:12px;backdrop-filter:blur(5px)}
     .legend div{display:flex;align-items:center;gap:7px;margin:6px 0}
     .topTools{position:absolute;top:16px;left:16px;right:16px;display:flex;gap:8px;z-index:4;pointer-events:none;justify-content:center}
     .topTools>*{pointer-events:auto}
     .pill{background:rgba(1,22,39,.94);border:1px solid var(--line);border-radius:999px;padding:9px 12px;font-size:12px;color:#a3d5ff;font-weight:700}
-    
     .marker{position:relative;transform:translate(-50%,-100%);width:34px;height:44px;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5))}
     .marker .pin{width:34px;height:34px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);border:3px solid white}
     .marker .txt{position:absolute;inset:4px 4px 10px 4px;display:grid;place-items:center;font-size:14px;font-weight:900;color:white}
@@ -148,12 +117,10 @@
           <button class="btn" id="saveConfig">설정 저장 후 네이버지도 로드</button>
         </div>
       </div>
-      
       <div class="section">
         <h3>레이어 필터</h3>
         <div class="filters" id="filters"></div>
       </div>
-      
       <div class="section">
         <h3>해양물류 허브 현황</h3>
         <div class="statGrid">
@@ -161,7 +128,6 @@
           <div class="stat"><b id="countYear">2026</b><span>DB 구축 연도</span></div>
         </div>
       </div>
-      
       <div class="section">
         <h3>식당 추가 / 제보 (관리자 승인 필요)</h3>
         <div class="formGrid">
@@ -180,13 +146,10 @@
         <p class="tiny" style="margin-top:10px;">* 제출된 데이터는 백엔드 서버를 거쳐 <a href="admin.html" style="color:#a3d5ff">관리자 대시보드</a> 검토 후 반영됩니다.</p>
       </div>
     </aside>
-    
     <main class="mapWrap">
       <div id="map" class="map"></div>
-      
       <div class="toggle-btn toggle-left" id="btnToggleLeft" title="좌측 메뉴 접기/펴기">◀</div>
       <div class="toggle-btn toggle-right" id="btnToggleRight" title="우측 메뉴 접기/펴기">▶</div>
-      
       <div class="mapBlocker" id="blocker"><div class="notice"><h2>API 사용량 보호 차단</h2><p>오늘 설정한 네이버 지도 로드 한도를 초과했습니다.</p><button class="btn red" id="blockerReset">관리자 차단 해제</button></div></div>
       <div class="topTools">
         <div class="pill" id="modePill">해양 허브 로딩 중...</div>
@@ -195,7 +158,6 @@
       </div>
       <div class="legend" id="legend"></div>
     </main>
-    
     <aside class="panel right">
       <div class="section">
         <h3>선택 식당 상세정보</h3>
@@ -236,14 +198,12 @@ let activeTags = new Set(Object.keys(TAGS)); let markers=[]; let map=null; let n
 const $=id=>document.getElementById(id);
 
 let leftOpen = true; let rightOpen = true;
-
 $('btnToggleLeft').onclick = () => {
   leftOpen = !leftOpen;
   document.documentElement.style.setProperty('--left-width', leftOpen ? '340px' : '0px');
   $('btnToggleLeft').textContent = leftOpen ? '◀' : '▶';
   triggerMapResize();
 };
-
 $('btnToggleRight').onclick = () => {
   rightOpen = !rightOpen;
   document.documentElement.style.setProperty('--right-width', rightOpen ? '380px' : '0px');
@@ -270,7 +230,7 @@ function incLoad(){const q=quota(); q.loads++; if(q.loads>=limit()) q.blocked=tr
 function renderQuota(){const q=quota(); $('quotaText').textContent=`오늘 API 로드 ${q.loads}/${limit()} · ${q.blocked?'차단됨':'허용'}`; $('blocker').classList.toggle('show',q.blocked)}
 function markerHtml(item){const t=TAGS[item.tag]||TAGS.woosuleng;return `<div class="marker"><div class="pin" style="background:${t.color}"></div><div class="txt"><span>${t.icon}</span></div></div>`}
 
-// [보완완료] 네이버 공식 규격에 맞춰 &callback 비동기 매커니즘으로 전면 개편
+// [안전 비동기 방식 개편 완료]
 async function loadNaverSecured() {
   const c = getConfig(); 
   $('clientId').value = c.clientId || ''; 
@@ -291,7 +251,7 @@ async function loadNaverSecured() {
     
     incLoad(); 
     const s = document.createElement('script'); 
-    // [수정] 타이밍 꼬임(레이스 컨디션)을 방지하기 위해 주소창 맨 뒤에 callback=initNaver를 직접 강제 연결합니다.
+    // 네이버 공식 규격: 주소창 뒤에 &callback=initNaver를 직접 연결해 타이밍 이슈를 원천 해결합니다.
     s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(serverData.clientId.trim())}&callback=initNaver`; 
     s.onerror = () => { initDemo('네이버 웹 스크립트 로드 오류'); }; 
     document.head.appendChild(s);
@@ -300,20 +260,18 @@ async function loadNaverSecured() {
   }
 }
 
-// [수정] 네이버 엔진이 완전히 준비된 시점에 순차 실행을 보장합니다.
 function initNaver(){
   if(typeof naver !== 'undefined' && naver.maps) {
     naverLoaded = true;
     map = new naver.maps.Map('map',{center:new naver.maps.LatLng(35.1796,129.0756),zoom:11,zoomControl:true,zoomControlOptions:{position:naver.maps.Position.TOP_RIGHT},mapDataControl:false}); 
-    $('modePill').textContent = 'DYNAMIC MAP ACTIVE'; 
-    render();
+    $('modePill').textContent = 'DYNAMIC MAP ACTIVE'; render();
   } else {
     initDemo('네이버 지도 인증 실패 (콘솔 웹 서비스 URL 주소를 재확인하세요)');
   }
 }
 
 function initDemo(msg){
-  $('map').innerHTML = `<div style="height:100%;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,#002b5e,#000a14 70%);"><div style="max-width:540px;text-align:center;padding:24px;border:1px solid #00509e;background:rgba(0,21,41,0.8);border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.8);"><h2 style="color:#fff;margin-top:0;">${msg||'데모 모드'}</h2><p style="color:#8ab4f8;line-height:1.6;font-size:13px;">Netlify 대시보드의 Environment variables 설정과<br>네이버 클라우드의 Web 서비스 URL 등록이 완벽히 결합되면 지도가 즉시 깨어납니다.</p></div></div>`; 
+  $('map').innerHTML = `<div style="height:100%;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,#002b5e,#000a14 70%);"><div style="max-width:540px;text-align:center;padding:24px;border:1px solid #00509e;background:rgba(0,21,41,0.8);border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.8);"><h2 style="color:#fff;margin-top:0;">${msg||'데모 모드 구동 중'}</h2><p style="color:#8ab4f8;line-height:1.6;font-size:13px;">Netlify 대시보드의 Environment variables 설정과<br>네이버 클라우드의 Web 서비스 URL 등록이 완벽히 결합되면 지도가 즉시 깨어납니다.</p></div></div>`; 
   $('modePill').textContent = '데모 모드'; renderListOnly();
 }
 
@@ -383,7 +341,6 @@ $('saveConfig').onclick=()=>{setConfig({clientId:$('clientId').value.trim(),geoc
 $('resetQuotaBtn').onclick=$('blockerReset').onclick=()=>{saveQuota({loads:0,geocodes:0,blocked:false}); location.reload()};
 $('searchBtn').onclick=render; $('q').oninput=renderListOnly; $('addBtn').onclick=addItem; $('fitBtn').onclick=fitAll; $('locBtn').onclick=locate; $('allNaverBtn').onclick=openAllNaver;
 
-// [보완완료] 함수 명시적 전역 선언 체계 구축
 window.initNaver = initNaver; window.initDemo = initDemo;
 window.toggleTag=toggleTag; window.selectById=selectById; window.openNaver=openNaver; window.copyText=copyText;
 renderFilters(); renderLegend(); loadNaverSecured();
